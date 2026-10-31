@@ -17,16 +17,17 @@ export async function connectToMongoDB() {
     console.dir(err);
   }
 }
-const db = client.db("studioSpaceDB");
-if (!db) {
-  console.error("Failed to connect to the database.");
-  process.exit(1);
-} else {
-  console.log("Connected to the database successfully.");
-}
+const mongoClient = await connectToMongoDB();
+const db = mongoClient.db("studio-space");
+const studiosCollection = db.collection("studios");
 
 app.get("/", (req, res) => {
   res.send("Server is running");
+});
+
+app.get("/studios", async (req, res) => {
+  const studios = await studiosCollection.find().toArray();
+  res.json(studios);
 });
 
 app.listen(PORT, () => {
