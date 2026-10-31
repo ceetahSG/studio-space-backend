@@ -38,7 +38,7 @@ app.get("/featured-studios", async (req, res) => {
   res.send(featuredStudios);
 });
 
-app.get("/studio/:id", async (req, res) => {
+app.get("/studio/id/:id", async (req, res) => {
   const { id } = req.params;
 
   if (!ObjectId.isValid(id)) {
@@ -47,6 +47,11 @@ app.get("/studio/:id", async (req, res) => {
 
   const studio = await studiosCollection.findOne({ _id: new ObjectId(id) });
   res.send(studio);
+});
+app.get("/studio/:category", async (req, res) => {
+  const { category } = req.params;
+  const studios = await studiosCollection.find({ category }).toArray();
+  res.send(studios);
 });
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
