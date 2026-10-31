@@ -1,8 +1,11 @@
 import "dotenv/config";
 import express from "express";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
+import cors from "cors";
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 const PORT = process.env.PORT || 5000;
 const mongoDbUri = process.env.MONGO_DB_URI;
 
@@ -27,9 +30,24 @@ app.get("/", (req, res) => {
 
 app.get("/studios", async (req, res) => {
   const studios = await studiosCollection.find().toArray();
-  res.json(studios);
+  res.send(studios);
 });
 
+app.get("/featured-studios", async (req, res) => {
+  const featuredStudios = await studiosCollection.find().limit(6).toArray();
+  res.send(featuredStudios);
+});
+
+app.get("/studio/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ message: "Invalid studio ID" });
+  }
+
+  const studio = await studiosCollection.findOne({ _id: new ObjectId(id) });
+  res.send(studio);
+});
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
