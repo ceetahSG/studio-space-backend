@@ -23,6 +23,7 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("studio-space");
 const studiosCollection = db.collection("studios");
+const bookingsCollection = db.collection("bookings");
 
 app.get("/", (req, res) => {
   res.send("Server is running");
@@ -52,6 +53,18 @@ app.get("/studio/:category", async (req, res) => {
   const { category } = req.params;
   const studios = await studiosCollection.find({ category }).toArray();
   res.send(studios);
+});
+
+app.post("/booking", async (req, res) => {
+  const bookingData = req.body;
+  const result = await bookingsCollection.insertOne(bookingData);
+  res.send(result);
+});
+app.get("/bookings", async (req, res) => {
+  console.log("Received request for bookings with query:", req.query);
+  const email = req.query.email;
+  const result = await db.collection("bookings").find({ email }).toArray();
+  res.send(result);
 });
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
