@@ -62,7 +62,6 @@ app.post("/booking", async (req, res) => {
 });
 
 app.get("/bookings/:email", async (req, res) => {
-  console.log("Received request for bookings with query:", req.query);
   const { email } = req.params;
   const result = await bookingsCollection.find({ userEmail: email }).toArray();
   res.send(result);
@@ -86,6 +85,30 @@ app.put("/studios/:id", async (req, res) => {
   const result = await studiosCollection.updateOne(
     { _id: new ObjectId(id) },
     { $set: updatedStudioData },
+  );
+  res.send(result);
+});
+
+app.get("/studios/:email", async (req, res) => {
+  const { email } = req.params;
+  console.log("Received request for studios with email:", email);
+  const result = await studiosCollection.find({ hostEmail: email }).toArray();
+  res.send(result);
+});
+
+app.delete("/studios/:id", async (req, res) => {
+  const { id } = req.params;
+  const result = await studiosCollection.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
+});
+
+app.patch("/studio/:id", async (req, res) => {
+  const { id } = req.params;
+  console.log("Received request to update studio with ID:", id);
+  const updatedFields = req.body;
+  const result = await studiosCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updatedFields },
   );
   res.send(result);
 });
