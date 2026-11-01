@@ -60,12 +60,36 @@ app.post("/booking", async (req, res) => {
   const result = await bookingsCollection.insertOne(bookingData);
   res.send(result);
 });
-app.get("/bookings", async (req, res) => {
+
+app.get("/bookings/:email", async (req, res) => {
   console.log("Received request for bookings with query:", req.query);
-  const email = req.query.email;
-  const result = await db.collection("bookings").find({ email }).toArray();
+  const { email } = req.params;
+  const result = await bookingsCollection.find({ userEmail: email }).toArray();
   res.send(result);
 });
+
+app.delete("/booking/:id", async (req, res) => {
+  const { id } = req.params;
+  const result = await bookingsCollection.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
+});
+
+app.post("/studios", async (req, res) => {
+  const studioData = req.body;
+  const result = await studiosCollection.insertOne(studioData);
+  res.send(result);
+});
+
+app.put("/studios/:id", async (req, res) => {
+  const { id } = req.params;
+  const updatedStudioData = req.body;
+  const result = await studiosCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updatedStudioData },
+  );
+  res.send(result);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
