@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
 import cors from "cors";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const app = express();
 app.use(cors());
@@ -24,6 +25,30 @@ const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("studio-space");
 const studiosCollection = db.collection("studios");
 const bookingsCollection = db.collection("bookings");
+
+const verifyApi = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+  const token = authHeader.split(" ")[1];
+  console.log("Received token:", token);
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
+  const JWKS = createRemoteJWKSet(
+    new URL(`http://localhost:3000/api/auth/jwks`),
+  );
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (err) {
+    console.error("JWT verification error:", err);
+    return res.status(500).send({ message: "Token is invalid" });
+  }
+};
 
 app.get("/", (req, res) => {
   res.send("Server is running");
@@ -89,22 +114,21 @@ app.put("/studios/:id", async (req, res) => {
   res.send(result);
 });
 
-app.get("/studios/:email", async (req, res) => {
+app.get("/studios/:email", verifyApi, async (req, res) => {
   const { email } = req.params;
   console.log("Received request for studios with email:", email);
-  const result = await studiosCollection.find({ hostEmail: email }).toArray();
+  const result = await studiosCollection.find({ ownerEmail: email }).toArray();
   res.send(result);
 });
 
-app.delete("/studios/:id", async (req, res) => {
+app.delete("/studios/:id", verifyApi, async (req, res) => {
   const { id } = req.params;
   const result = await studiosCollection.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
 });
 
-app.patch("/studio/:id", async (req, res) => {
+app.patch("/studio/:id", verifyApi, async (req, res) => {
   const { id } = req.params;
-  console.log("Received request to update studio with ID:", id);
   const updatedFields = req.body;
   const result = await studiosCollection.updateOne(
     { _id: new ObjectId(id) },
