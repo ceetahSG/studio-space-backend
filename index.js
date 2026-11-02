@@ -81,8 +81,44 @@ app.get("/studio/:category", async (req, res) => {
 });
 
 app.post("/booking", async (req, res) => {
-  const bookingData = req.body;
-  const result = await bookingsCollection.insertOne(bookingData);
+  const bookingData = { ...req.body };
+  const bookingDate = new Date(bookingData.date);
+
+  if (
+    !bookingData.studioId ||
+    !bookingData.date ||
+    Number.isNaN(bookingDate.getTime())
+  ) {
+    return res
+      .status(400)
+      .send({ message: "A valid studio ID and booking date are required" });
+  }
+
+  const startOfDay = new Date(bookingDate);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
+
+  console.log("Received booking data:", bookingData);
+
+  const ExistingBooking = await bookingsCollection.findOne({
+    studioId: bookingData.studioId,
+    $or: [
+      { date: { $gte: startOfDay, $lt: endOfDay } },
+      { date: bookingData.date },
+      { date: bookingDate.toISOString() },
+    ],
+  });
+  console.log("Existing booking check:", ExistingBooking);
+  if (ExistingBooking) {
+    return res
+      .status(400)
+      .send({ message: "Booking already exists for this date" });
+  }
+  const result = await bookingsCollection.insertOne({
+    ...bookingData,
+    date: bookingDate,
+  });
   res.send(result);
 });
 
