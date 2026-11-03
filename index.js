@@ -32,26 +32,21 @@ const verifyApi = async (req, res, next) => {
   if (!authHeader) {
     return res.status(401).send({ message: "Unauthorized" });
   }
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme !== "Bearer" || !token) {
+  const token = authHeader.split(" ")[1];
+  console.log("Received token:", token);
+  if (!token) {
     return res.status(401).send({ message: "Unauthorized" });
   }
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+  );
 
   try {
-    if (!process.env.CLIENT_URL) {
-      console.error("CLIENT_URL is not configured");
-      return res.status(500).send({ message: "Authentication is not configured" });
-    }
-
-    const clientUrl = process.env.CLIENT_URL.replace(/\/+$/, "");
-    const JWKS = createRemoteJWKSet(
-      new URL(`${clientUrl}/api/auth/jwks`),
-    );
     const { payload } = await jwtVerify(token, JWKS);
     next();
   } catch (err) {
     console.error("JWT verification error:", err);
-    return res.status(401).send({ message: "Token is invalid or could not be verified" });
+    return res.status(500).send({ message: "Token is invalid" });
   }
 };
 
@@ -155,7 +150,7 @@ app.put("/studios/:id", async (req, res) => {
   res.send(result);
 });
 
-app.get("/studios/:email", async (req, res) => {
+app.get("/studios/:email", verifyApi, async (req, res) => {
   const { email } = req.params;
   console.log("Received request for studios with email:", email);
   const result = await studiosCollection.find({ ownerEmail: email }).toArray();
@@ -170,25 +165,12 @@ app.delete("/studios/:id", verifyApi, async (req, res) => {
 
 app.patch("/studio/:id", verifyApi, async (req, res) => {
   const { id } = req.params;
-  if (!ObjectId.isValid(id)) {
-    return res.status(400).send({ message: "Invalid studio ID" });
-  }
-
-  const { _id, ...updatedFields } = req.body;
-  if (Object.keys(updatedFields).length === 0) {
-    return res.status(400).send({ message: "No studio fields were provided" });
-  }
-
-  try {
-    const result = await studiosCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: updatedFields },
-    );
-    res.send(result);
-  } catch (err) {
-    console.error("Studio update error:", err);
-    res.status(500).send({ message: "Unable to update studio" });
-  }
+  const updatedFields = req.body;
+  const result = await studiosCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updatedFields },
+  );
+  res.send(result);
 });
 
 app.listen(PORT, () => {
