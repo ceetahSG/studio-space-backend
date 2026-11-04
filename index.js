@@ -28,6 +28,7 @@ const bookingsCollection = db.collection("bookings");
 
 const verifyApi = async (req, res, next) => {
   const authHeader = req.headers.authorization;
+  // console.log("Authorization header:", authHeader);
 
   if (!authHeader) {
     return res.status(401).send({ message: "Unauthorized" });
@@ -80,7 +81,7 @@ app.get("/studio/:category", async (req, res) => {
   res.send(studios);
 });
 
-app.post("/booking", async (req, res) => {
+app.post("/booking", verifyApi, async (req, res) => {
   const bookingData = { ...req.body };
   const bookingDate = new Date(bookingData.date);
 
@@ -134,7 +135,7 @@ app.delete("/booking/:id", async (req, res) => {
   res.send(result);
 });
 
-app.post("/studios", async (req, res) => {
+app.post("/studios", verifyApi, async (req, res) => {
   const studioData = req.body;
   const result = await studiosCollection.insertOne(studioData);
   res.send(result);
