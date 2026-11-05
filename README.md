@@ -5,7 +5,7 @@ creative-workspace marketplace. It manages studio listings, category
 discovery, studio details, reservations, and authenticated host mutations.
 
 **Live API:** https://studio-space-backend-server.vercel.app
-**Frontend:** https://studio-space-chetah.vercel.app
+**Frontend:** https://studio-space-xi-umber.vercel.app
 
 ## Responsibilities
 
